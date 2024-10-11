@@ -5,13 +5,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../env'; // Nhập biến môi trường từ file env.js
 
 const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState(''); // Thay đổi từ username thành email
+  const [email, setEmail] = useState(''); 
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     // Kiểm tra xem người dùng đã nhập email và mật khẩu chưa
     if (!email || !password) {
-      Alert.alert('Vui lòng nhập email/mật khẩu');
+      Alert.alert('Vui lòng nhập email và mật khẩu');
       return;
     }
 
