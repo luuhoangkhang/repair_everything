@@ -12,12 +12,13 @@ const TechnicianRegistrationScreen = ({ navigation }) => {
   const [specialty, setSpecialty] = useState(null);
   const [categories, setCategories] = useState([]);
 
-  // Fetch categories from the API
+  // Lấy danh sách chuyên ngành từ API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await axios.get(`${API_URL}/name_technician`);
-        setCategories(response.data); // Giả sử response.data là một mảng các loại thợ
+        console.log(response.data); // In ra dữ liệu từ API để kiểm tra
+        setCategories(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         Alert.alert('Lỗi', error.response?.data || error.message);
       }
@@ -27,7 +28,7 @@ const TechnicianRegistrationScreen = ({ navigation }) => {
 
   const handleTechnicianRegistration = async () => {
     if (!username || !email || !password || !phone || !specialty) {
-      Alert.alert('Vui lòng điền đầy đủ thông tin và chọn chuyên ngành.');
+      Alert.alert('Vui lòng điền đầy đủ thông tin và chọn chuyên môn.');
       return;
     }
 
@@ -38,7 +39,7 @@ const TechnicianRegistrationScreen = ({ navigation }) => {
         password,
         phone,
         account_type: 'technician',
-        technician_category_name: specialty, // Gửi tên chuyên ngành
+        technician_category_name: specialty,
       });
 
       if (response.status === 200) {
@@ -59,13 +60,17 @@ const TechnicianRegistrationScreen = ({ navigation }) => {
       <TextInput placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" style={styles.input} />
       <TextInput placeholder="Mật khẩu" value={password} onChangeText={setPassword} secureTextEntry style={styles.input} />
       <TextInput placeholder="Số điện thoại" value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.input} />
-      <Text>Chuyên ngành:</Text>
-      <Picker selectedValue={specialty} onValueChange={(itemValue) => setSpecialty(itemValue)} style={styles.input}>
-        <Picker.Item label="Chọn chuyên ngành" value={null} />
-        {categories.map((category) => (
-          <Picker.Item key={category.id} label={category.name} value={category.name} />
-        ))}
-      </Picker>
+      <Text>Chuyên môn:</Text>
+      {categories.length > 0 ? (
+        <Picker selectedValue={specialty} onValueChange={(itemValue) => setSpecialty(itemValue)} style={styles.input}>
+          <Picker.Item label="" value={null} />
+          {categories.map((category) => (
+            <Picker.Item key={category.id ? category.id.toString() : 'defaultKey'} label={category.name} value={category.name} />
+          ))}
+        </Picker>
+      ) : (
+        <Text>Đang tải chuyên môn...</Text>
+      )}
       <Button title="Đăng ký" onPress={handleTechnicianRegistration} />
     </View>
   );

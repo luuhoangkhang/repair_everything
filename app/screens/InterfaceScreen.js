@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, FlatList, StyleSheet, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Button, FlatList, StyleSheet, Alert, TextInput, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,13 +25,13 @@ const InterfaceScreen = ({ navigation }) => {
 
     fetchUserId();
     fetchPosts();
-    fetchCategories(); // Gọi hàm lấy danh sách loại thợ
+    fetchCategories();
   }, []);
 
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${API_URL}/name_technician`);
-      setCategories(response.data); // Lưu danh sách loại thợ vào state
+      setCategories(response.data);
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể lấy danh sách loại thợ.');
     }
@@ -42,11 +42,8 @@ const InterfaceScreen = ({ navigation }) => {
     if (token) {
       try {
         const response = await axios.get(`${API_URL}/posts`, {
-          headers: {
-            Authorization: token,
-          },
+          headers: { Authorization: token },
         });
-        // Sắp xếp các bài viết theo thứ tự được tạo gần nhất trước tiên
         const sortedPosts = response.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setPosts(sortedPosts);
       } catch (error) {
@@ -54,7 +51,6 @@ const InterfaceScreen = ({ navigation }) => {
       }
     }
   };
-  
 
   const handlePost = async () => {
     if (!title || !content || !selectedCategory) {
@@ -118,38 +114,22 @@ const InterfaceScreen = ({ navigation }) => {
   };
 
   const handleComment = async (postId) => {
-    // Kiểm tra nội dung bình luận
     if (!commentContent) {
       Alert.alert('Vui lòng điền nội dung bình luận.');
       return;
     }
-  
-    // Lấy loại thợ của người dùng
-    const userCategory = await AsyncStorage.getItem('userCategory'); // Lưu loại thợ trong AsyncStorage khi đăng nhập
-  
-    // Tìm bài viết tương ứng
-    const post = posts.find(p => p.id === postId);
-  
-    // Kiểm tra loại thợ có phù hợp không
-    if (userCategory !== post.technician_category_name) {
-      Alert.alert('Lỗi', 'Bạn không thể bình luận vì loại thợ không phù hợp với bài viết.');
-      return;
-    }
-  
+
     const token = await AsyncStorage.getItem('token');
-  
+
     try {
-      const response = await axios.post(`${API_URL}/posts/${postId}/comments`, 
-        { content: commentContent }, {
-          headers: {
-            Authorization: token,
-          },
-        });
-  
+      const response = await axios.post(`${API_URL}/posts/${postId}/comments`, { content: commentContent }, {
+        headers: { Authorization: token },
+      });
+
       if (response.status === 200) {
-        Alert.alert('Thành công', 'Bình luận thành công.');
+        //Alert.alert('Thành công', 'Bình luận thành công.');
         setCommentContent('');
-        fetchPosts(); // Làm mới danh sách bài viết để hiển thị bình luận mới
+        fetchPosts();
       } else {
         Alert.alert('Lỗi', response.data || 'Có lỗi xảy ra.');
       }
@@ -161,7 +141,7 @@ const InterfaceScreen = ({ navigation }) => {
   const toggleForm = () => {
     setTitle('');
     setContent('');
-    setSelectedCategory(''); // Reset lại loại thợ được chọn
+    setSelectedCategory(''); 
     setEditingPostId(null);
     setIsFormVisible((prev) => !prev);
   };
@@ -174,50 +154,57 @@ const InterfaceScreen = ({ navigation }) => {
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={100} // Điều chỉnh độ cao cho bàn phím
+      keyboardVerticalOffset={100} // Điều chỉnh giá trị này nếu cần
     >
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Profile')}>
+        <Text style={[styles.buttonText, { fontSize: 20 }, {color: '#31A9D4'}]}>Profile</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Danh sách bài viết</Text>
       <Button title={isFormVisible ? "Hủy" : "Đăng bài viết"} onPress={toggleForm} />
 
       {isFormVisible && (
-        <View>
-          <TextInput
-            placeholder="Tiêu đề"
-            value={title}
-            onChangeText={setTitle}
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Nội dung"
-            value={content}
-            onChangeText={setContent}
-            style={[styles.input, { height: 100 }]}
-            multiline
-          />
-          <Picker
-            selectedValue={selectedCategory}
-            style={styles.picker}
-            onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-          >
-            <Picker.Item label="Chọn loại thợ" value="" />
-            {categories.map((category) => (
-              <Picker.Item key={category.name} label={category.name} value={category.name} />
-            ))}
-          </Picker>
-          <Button title={editingPostId ? "Cập nhật" : "Gửi bài viết"} onPress={handlePost} />
-        </View>
+        <ScrollView>
+          <View>
+            <TextInput
+              placeholder="Tiêu đề"
+              value={title}
+              onChangeText={setTitle}
+              style={[styles.input, { height: 40 }]}
+            />
+            <TextInput
+              placeholder="Nội dung"
+              value={content}
+              onChangeText={setContent}
+              style={[styles.input, { height: 100 }]}
+              multiline
+            />
+            <Picker
+              selectedValue={selectedCategory}
+              style={styles.picker}
+              onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+            >
+              <Picker.Item label="Chọn loại thợ" value="" />
+              {categories.map((category) => (
+                <Picker.Item key={category.name} label={category.name} value={category.name} />
+              ))}
+            </Picker>
+            <Button title={editingPostId ? "Cập nhật" : "Gửi bài viết"} onPress={handlePost} />
+          </View>
+        </ScrollView>
       )}
 
-      {/* Ẩn danh sách bài viết khi đang đăng bài */}
       {!isFormVisible && (
         <FlatList
           data={posts}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <View style={styles.postContainer}>
-              <Text style={styles.postTitle} onPress={() => togglePostDetails(item.id)}>
-                {item.title}
-              </Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.postTitle} onPress={() => togglePostDetails(item.id)}>
+                  {item.title}
+                </Text>
+                <Text style={styles.categoryText}>{item.technician_category_name}</Text>
+              </View>
               <Text style={styles.usernameText}>Người đăng: {item.username}</Text>
               <Text style={styles.contentText}>{item.content}</Text>
               <Text style={styles.dateText}>Được tạo lúc: {new Date(item.created_at).toLocaleString()}</Text>
@@ -227,35 +214,36 @@ const InterfaceScreen = ({ navigation }) => {
                   {item.user_id === userId ? (
                     <View style={styles.buttonContainer}>
                       <Button title="Chỉnh sửa" onPress={() => handleEditPost(item)} />
-                      <Button title="Xóa" onPress={() => handleDeletePost(item.id)} color="red" />
+                      <Button title="Xóa" onPress={() => handleDeletePost(item.id)} />
                     </View>
                   ) : (
-                    <View style={styles.commentContainer}>
+                    <View>
                       <TextInput
                         placeholder="Viết bình luận..."
                         value={commentContent}
                         onChangeText={setCommentContent}
-                        style={styles.commentInput}
+                        style={[styles.input, { height: 60 }]}
+                        multiline
                       />
                       <Button title="Gửi bình luận" onPress={() => handleComment(item.id)} />
                     </View>
                   )}
-                  
-                  {/* Hiển thị bình luận nếu có */}
-                  {item.comments && item.comments.length > 0 ? (
-                    <View style={styles.commentsContainer}>
-                      {item.comments.map(comment => (
-                        <View key={comment.id} style={styles.commentContainer}>
-                          <Text style={styles.commentUsername}>{comment.username}</Text>
-                          <Text style={styles.commentText}>{comment.content}</Text>
-                          <Text style={styles.commentDateText}>{new Date(comment.created_at).toLocaleString()}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text>Chưa có bình luận nào.</Text>
-                  )}
                 </>
+              )}
+
+              {selectedPostId === item.id && item.comments && item.comments.length > 0 && (
+                <FlatList
+                  data={item.comments}
+                  keyExtractor={(comment) => comment.id.toString()}
+                  renderItem={({ item: comment }) => (
+                    <View style={styles.commentContainer}>
+                      <Text style={styles.commentText}>
+                        <Text style={styles.commentAuthor}>{comment.username}</Text>: {comment.content}
+                      </Text>
+                      <Text style={styles.commentDate}>{new Date(comment.created_at).toLocaleString()}</Text>
+                    </View>
+                  )}
+                />
               )}
             </View>
           )}
@@ -273,36 +261,37 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-  },
-  picker: {
-    height: 1,
-    width: '100%',
+    textAlign: 'center',
     marginBottom: 10,
   },
   postContainer: {
-    marginBottom: 20,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
+    padding: 15,
+    marginVertical: 8,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   postTitle: {
-    fontSize: 18,
+    width: '60%', // Chỉ chiếm 60% chiều rộng
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#333',
   },
   usernameText: {
     fontSize: 14,
-    color: '#555',
+    color: '#666',
+    marginTop: 5,
+  },
+  categoryText: {
+    fontSize: 14,
+    color: '#007AFF',
   },
   contentText: {
     fontSize: 16,
+    color: '#555',
     marginVertical: 5,
   },
   dateText: {
@@ -314,33 +303,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  commentContainer: {
-    marginTop: 10,
-  },
-  commentInput: {
+  input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginVertical: 8,
+  },
+  picker: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginVertical: 8,
+  },
+  commentContainer: {
+    backgroundColor: '#f1f1f1',
     padding: 10,
-    marginBottom: 10,
-  },
-  commentsContainer: {
-    marginTop: 10,
-  },
-  commentUsername: {
-    fontWeight: 'bold',
+    borderRadius: 5,
+    marginTop: 5,
   },
   commentText: {
     fontSize: 14,
+    color: '#333',
   },
-  commentDateText: {
+  commentAuthor: {
+    fontWeight: 'bold',
+  },
+  commentDate: {
     fontSize: 12,
     color: '#999',
   },
-  formContainer: {
-    marginTop: 'auto', // Đẩy form xuống dưới cùng
-    paddingTop: 10,
-  },
-  
 });
 
 export default InterfaceScreen;
